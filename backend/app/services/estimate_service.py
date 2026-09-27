@@ -11,6 +11,18 @@ def run_estimate(window_id: int, fabric_id: int, save: bool, note: str):
         raise HTTPException(422, "dirty window")
     settings = settings_repo.get_all()
     fullness = float(w.get("fullness") or settings.get("default_fullness", 2.0))
-    calc = fabric_meters(w["width"], w["height"], fullness, f["hem_top"], f["hem_bottom"], f["fabric_width"])
+    bay_enabled = bool(w.get("bay_enabled"))
+    bay_depth = w.get("bay_depth")
+    if bay_depth is None:
+        bay_depth = settings.get("default_bay_depth", 0.6)
+    bay_depth = float(bay_depth or 0.0)
+    if bay_enabled and bay_depth <= 0:
+        raise HTTPException(422, "bay depth must be positive when bay window is enabled")
+    calc = fabric_meters(
+        w["width"], w["height"], fullness,
+        f["hem_top"], f["hem_bottom"], f["fabric_width"],
+        bay_depth=bay_depth if bay_enabled else 0.0,
+    )
+    calc["bay_enabled"] = bay_enabled
     run_id = history.insert_run(window_id, fabric_id, calc, note) if save else None
     return {"window": w, "fabric": f, "run_id": run_id, **calc}

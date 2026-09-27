@@ -1,13 +1,23 @@
 from app.db import connect
 
+def _ensure_column(c, table, column, ddl):
+    cols = {r["name"] for r in c.execute(f"PRAGMA table_info({table})").fetchall()}
+    if column not in cols:
+        c.execute(f"ALTER TABLE {table} ADD COLUMN {ddl}")
+
 def init_db():
     c = connect()
     c.executescript("""
-    CREATE TABLE IF NOT EXISTS windows(id INTEGER PRIMARY KEY,name TEXT,width REAL,height REAL,fullness REAL,data_quality TEXT,note TEXT);
+    CREATE TABLE IF NOT EXISTS windows(id INTEGER PRIMARY KEY,name TEXT,width REAL,height REAL,fullness REAL,data_quality TEXT,note TEXT,bay_enabled INTEGER NOT NULL DEFAULT 0,bay_depth REAL);
     CREATE TABLE IF NOT EXISTS fabrics(id INTEGER PRIMARY KEY,name TEXT,fabric_width REAL,hem_top REAL,hem_bottom REAL,data_quality TEXT,note TEXT);
     CREATE TABLE IF NOT EXISTS settings(key TEXT PRIMARY KEY,value TEXT);
     CREATE TABLE IF NOT EXISTS calc_runs(id INTEGER PRIMARY KEY AUTOINCREMENT,window_id INT,fabric_id INT,result_json TEXT,note TEXT,created_at TEXT);
     """)
+    # migrate pre-bay databases in place
+    _ensure_column(c, "windows", "bay_enabled", "bay_enabled INTEGER NOT NULL DEFAULT 0")
+    _ensure_column(c, "windows", "bay_depth", "bay_depth REAL")
+    c.execute("INSERT OR IGNORE INTO settings(key,value) VALUES ('default_bay_depth','0.6')")
+    c.commit()
     if c.execute("SELECT COUNT(*) c FROM windows").fetchone()["c"] == 0:
         c.executemany("INSERT INTO windows(name,width,height,fullness,data_quality,note) VALUES (?,?,?,?,?,?)",[
             ("客厅落地窗",3.0,2.6,2.0,"clean",""),
