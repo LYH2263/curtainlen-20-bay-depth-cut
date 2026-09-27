@@ -8,12 +8,13 @@ def fabric_meters(
     hem_top: float,
     hem_bottom: float,
     fabric_width: float,
+    bay_depth: float = 0.0,
 ) -> dict:
     if fabric_width <= 0:
         raise ValueError("fabric width required")
     finished_w = float(window_w) * float(fullness)
     panels = max(1, ceil_units(finished_w / float(fabric_width)))
-    cut_h = float(window_h) + float(hem_top) + float(hem_bottom)
+    cut_h = float(window_h) + float(hem_top) + float(hem_bottom) + float(bay_depth)
     meters = panels * cut_h
     return {
         "finished_width": round(finished_w, 3),
@@ -21,4 +22,5 @@ def fabric_meters(
         "cut_height": round(cut_h, 3),
         "meters": round(meters, 2),
         "fabric_width": float(fabric_width),
+        "bay_depth": round(float(bay_depth), 3),
     }

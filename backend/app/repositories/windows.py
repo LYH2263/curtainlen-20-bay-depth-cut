@@ -14,3 +14,15 @@ def get_window(wid: int):
         return dict(r) if r else None
     finally:
         c.close()
+
+def update_bay(wid: int, bay_enabled: bool, bay_depth):
+    c = connect()
+    try:
+        cur = c.execute(
+            "UPDATE windows SET bay_enabled=?, bay_depth=? WHERE id=?",
+            (1 if bay_enabled else 0, bay_depth, wid),
+        )
+        c.commit()
+        return cur.rowcount > 0
+    finally:
+        c.close()
